@@ -28,6 +28,26 @@ describe('pathToHttpPath', () => {
   it('encodes slashes inside segments', () => {
     expect(pathToHttpPath(['a/b'])).toBe('/a%2Fb')
   })
+
+  it('returns consistent results across cached and uncached arrays', () => {
+    const cached = ['x', 'y']
+    expect(pathToHttpPath(cached)).toBe('/x/y')
+    expect(pathToHttpPath(cached)).toBe('/x/y')
+    expect(pathToHttpPath(['x', 'y'])).toBe('/x/y')
+    expect(pathToHttpPath(['x'])).toBe('/x')
+    expect(pathToHttpPath(cached)).toBe('/x/y')
+  })
+
+  it('invalidates the cache when the same array changes', () => {
+    const path = ['x']
+    expect(pathToHttpPath(path)).toBe('/x')
+
+    path.push('y')
+    expect(pathToHttpPath(path)).toBe('/x/y')
+
+    path[0] = 'z'
+    expect(pathToHttpPath(path)).toBe('/z/y')
+  })
 })
 
 describe('normalizeHttpPath', () => {

@@ -1,7 +1,25 @@
 import { tryDecodeURIComponent } from './uri'
 
+/**
+ * Procedure paths are usually stable arrays reused across calls. Keep a
+ * snapshot so mutable arrays cannot return a stale encoded path.
+ */
+const HTTP_PATH_CACHE = new WeakMap<readonly string[], [readonly string[], `/${string}`]>()
+
 export function pathToHttpPath(path: readonly string[]): `/${string}` {
-  return `/${path.map(encodeURIComponent).join('/')}`
+  const cached = HTTP_PATH_CACHE.get(path)
+
+  if (
+    cached !== undefined
+    && cached[0].length === path.length
+    && cached[0].every((segment, index) => segment === path[index])
+  ) {
+    return cached[1]
+  }
+
+  const httpPath = `/${path.map(encodeURIComponent).join('/')}` as `/${string}`
+  HTTP_PATH_CACHE.set(path, [path.slice(), httpPath])
+  return httpPath
 }
 
 export function normalizeHttpPath(path: string): `/${string}` {
